@@ -489,6 +489,9 @@ body {
     border-radius: 8px;
     border: 1px solid #dee2e6;
     display: none; /* Hidden by default, shown when no API key is set */
+}
+
+.api-key-wrapper {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -496,38 +499,34 @@ body {
 
 #api-key-container input {
     flex: 1;
-    padding: 10px;
+    padding: 8px;
     border: 1px solid #ced4da;
     border-radius: 4px;
-    font-size: 14px;
 }
 
 #api-key-container button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     background: #34a853;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    white-space: nowrap;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s ease;
 }
 
 #api-key-container button:hover {
-    background: #2d9346;
+    background-color: #2c8c47;
 }
 
 #api-key-container a {
     color: #4285f4;
     text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    white-space: nowrap;
-    transition: background-color 0.2s ease;
+    font-weight: bold;
+    transition: color 0.3s ease;
 }
 
 #api-key-container a:hover {
-    background: #f1f3f4;
-    text-decoration: none;
+    color: #3367d6;
+    text-decoration: underline;
 }
  
