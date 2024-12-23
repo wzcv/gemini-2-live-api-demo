@@ -39,11 +39,25 @@ export class AudioRecorder {
     async start(onAudioData) {
         this.onAudioData = onAudioData;
         try {
-            // Request microphone access
+            // First check if we have audio permission
+            const permissionResult = await navigator.permissions.query({ name: 'microphone' })
+                .catch(() => ({ state: 'prompt' })); // Fallback for browsers that don't support permission query
+
+            if (permissionResult.state === 'denied') {
+                throw new ApplicationError(
+                    'Microphone access was denied. Please enable microphone access in your browser settings.',
+                    ErrorCodes.AUDIO_PERMISSION_DENIED
+                );
+            }
+
+            // Request microphone access with explicit constraints for mobile
             this.stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     channelCount: 1,
-                    sampleRate: this.sampleRate
+                    sampleRate: this.sampleRate,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
                 } 
             });
             
@@ -74,7 +88,23 @@ export class AudioRecorder {
             this.processor.connect(this.audioContext.destination);
             this.isRecording = true;
         } catch (error) {
-            console.error('Error starting audio recording:', error);
+            Logger.error('Microphone access error:', error);
+            
+            // Provide more specific error messages
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                throw new ApplicationError(
+                    'Microphone access was denied. Please allow microphone access and try again.',
+                    ErrorCodes.AUDIO_PERMISSION_DENIED,
+                    { originalError: error }
+                );
+            } else if (error.name === 'NotFoundError') {
+                throw new ApplicationError(
+                    'No microphone found. Please ensure your device has a working microphone.',
+                    ErrorCodes.AUDIO_DEVICE_NOT_FOUND,
+                    { originalError: error }
+                );
+            }
+            
             throw error;
         }
     }
