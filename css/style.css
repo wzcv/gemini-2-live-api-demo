@@ -530,3 +530,6 @@ body {
     text-decoration: underline;
 }
  
+#api-key-input {
+    width: calc(100% + 100px);
+}
