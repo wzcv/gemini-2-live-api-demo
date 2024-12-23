@@ -27,6 +27,9 @@ const screenIcon = document.getElementById('screen-icon');
 const screenContainer = document.getElementById('screen-container');
 const screenPreview = document.getElementById('screen-preview');
 const inputAudioVisualizer = document.getElementById('input-audio-visualizer');
+const apiKeyContainer = document.getElementById('api-key-container');
+const apiKeyInput = document.getElementById('api-key-input');
+const saveApiKeyButton = document.getElementById('save-api-key');
 
 // State variables
 let isRecording = false;
@@ -39,6 +42,7 @@ let videoManager = null;
 let isScreenSharing = false;
 let screenRecorder = null;
 let isUsingTool = false;
+let apiKey = localStorage.getItem('gemini_api_key');
 
 // Multimodal Client
 const client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY });
@@ -201,6 +205,11 @@ async function resumeAudioContext() {
  * @returns {Promise<void>}
  */
 async function connectToWebsocket() {
+    if (!CONFIG.API.KEY) {
+        logMessage('Please enter your API key first', 'system');
+        apiKeyContainer.style.display = 'block';
+        return;
+    }
     const config = {
         model: CONFIG.API.MODEL_NAME,
         generationConfig: {
@@ -496,4 +505,37 @@ function stopScreenSharing() {
 
 screenButton.addEventListener('click', handleScreenShare);
 screenButton.disabled = true;
+
+function handleApiKey() {
+    if (!apiKey) {
+        apiKeyContainer.style.display = 'block';
+        connectButton.disabled = true;
+    } else {
+        apiKeyContainer.style.display = 'none';
+        connectButton.disabled = false;
+        CONFIG.API.KEY = apiKey;
+    }
+}
+
+function saveApiKey() {
+    const newApiKey = apiKeyInput.value.trim();
+    if (newApiKey) {
+        apiKey = newApiKey;
+        localStorage.setItem('gemini_api_key', apiKey);
+        CONFIG.API.KEY = apiKey;
+        apiKeyContainer.style.display = 'none';
+        connectButton.disabled = false;
+        apiKeyInput.value = '';
+        logMessage('API key saved successfully', 'system');
+    }
+}
+
+saveApiKeyButton.addEventListener('click', saveApiKey);
+apiKeyInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+        saveApiKey();
+    }
+});
+
+handleApiKey();
   
