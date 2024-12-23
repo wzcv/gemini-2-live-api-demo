@@ -155,9 +155,6 @@ async function connectToWebsocket() {
         return;
     }
 
-    // Check audio support before enabling mic button
-    const hasAudioSupport = checkAudioSupport();
-
     client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY });
 
     const config = {
@@ -185,7 +182,7 @@ async function connectToWebsocket() {
         connectButton.classList.add('connected');
         messageInput.disabled = false;
         sendButton.disabled = false;
-        micButton.disabled = !hasAudioSupport; // Only enable if supported
+        micButton.disabled = false;
         cameraButton.disabled = false;
         screenButton.disabled = false;
         logMessage('Connected to Gemini 2.0 Flash Multimodal Live API', 'system');
@@ -491,17 +488,8 @@ async function ensureAudioInitialized() {
 async function handleMicToggle() {
     if (!isRecording) {
         try {
-            // First check if the context is in suspended state
-            if (audioCtx && audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
-
             await ensureAudioInitialized();
             audioRecorder = new AudioRecorder();
-            
-            // Add loading state to mic button
-            micButton.disabled = true;
-            micButton.classList.add('loading');
             
             const inputAnalyser = audioCtx.createAnalyser();
             inputAnalyser.fftSize = 256;
@@ -526,14 +514,7 @@ async function handleMicToggle() {
                 updateAudioVisualizer(inputVolume, true);
             });
 
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                } 
-            });
-            
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const source = audioCtx.createMediaStreamSource(stream);
             source.connect(inputAnalyser);
             
@@ -544,24 +525,9 @@ async function handleMicToggle() {
             updateMicIcon();
         } catch (error) {
             Logger.error('Microphone error:', error);
-            
-            // Provide user-friendly error messages
-            let errorMessage = 'Could not access microphone. ';
-            if (error.code === ErrorCodes.AUDIO_PERMISSION_DENIED) {
-                errorMessage += 'Please allow microphone access in your browser settings.';
-            } else if (error.code === ErrorCodes.AUDIO_DEVICE_NOT_FOUND) {
-                errorMessage += 'Please ensure your device has a working microphone.';
-            } else {
-                errorMessage += error.message;
-            }
-            
-            logMessage(`Error: ${errorMessage}`, 'system');
+            logMessage(`Error: ${error.message}`, 'system');
             isRecording = false;
             updateMicIcon();
-        } finally {
-            // Always remove loading state
-            micButton.disabled = false;
-            micButton.classList.remove('loading');
         }
     } else {
         if (audioRecorder && isRecording) {
@@ -582,18 +548,4 @@ async function resumeAudioContext() {
     if (audioCtx && audioCtx.state === 'suspended') {
         await audioCtx.resume();
     }
-}
-
-/**
- * Checks audio support.
- * @returns {boolean} True if audio support is available, false otherwise.
- */
-function checkAudioSupport() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        logMessage('Audio recording is not supported in this browser', 'system');
-        micButton.disabled = true;
-        micButton.title = 'Audio recording not supported in this browser';
-        return false;
-    }
-    return true;
 }
