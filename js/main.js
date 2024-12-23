@@ -27,6 +27,9 @@ const screenIcon = document.getElementById('screen-icon');
 const screenContainer = document.getElementById('screen-container');
 const screenPreview = document.getElementById('screen-preview');
 const inputAudioVisualizer = document.getElementById('input-audio-visualizer');
+const apiKeyContainer = document.getElementById('api-key-container');
+const apiKeyInput = document.getElementById('api-key-input');
+const saveApiKeyButton = document.getElementById('save-api-key');
 
 // State variables
 let isRecording = false;
@@ -40,6 +43,7 @@ let isScreenSharing = false;
 let screenRecorder = null;
 let isUsingTool = false;
 let client = null;
+let apiKey = localStorage.getItem('gemini_api_key');
 
 /**
  * Logs a message to the UI.
@@ -191,6 +195,37 @@ async function handleMicToggle() {
 async function resumeAudioContext() {
     if (audioCtx && audioCtx.state === 'suspended') {
         await audioCtx.resume();
+    }
+}
+
+/**
+ * Handles the API key management
+ */
+function handleApiKey() {
+    apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+        apiKeyContainer.style.display = 'block';
+        connectButton.disabled = true;
+    } else {
+        apiKeyContainer.style.display = 'none';
+        connectButton.disabled = false;
+        CONFIG.API.KEY = apiKey;
+    }
+}
+
+/**
+ * Saves the API key to localStorage
+ */
+function saveApiKey() {
+    const newApiKey = apiKeyInput.value.trim();
+    if (newApiKey) {
+        apiKey = newApiKey;
+        localStorage.setItem('gemini_api_key', apiKey);
+        CONFIG.API.KEY = apiKey;
+        apiKeyContainer.style.display = 'none';
+        connectButton.disabled = false;
+        apiKeyInput.value = '';
+        logMessage('API key saved successfully', 'system');
     }
 }
 
@@ -505,4 +540,13 @@ function stopScreenSharing() {
 
 screenButton.addEventListener('click', handleScreenShare);
 screenButton.disabled = true;
+
+saveApiKeyButton.addEventListener('click', saveApiKey);
+apiKeyInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+        saveApiKey();
+    }
+});
+
+handleApiKey(); // Call this when the page loads
   
