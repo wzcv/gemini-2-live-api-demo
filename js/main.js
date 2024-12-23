@@ -27,7 +27,15 @@ const screenIcon = document.getElementById('screen-icon');
 const screenContainer = document.getElementById('screen-container');
 const screenPreview = document.getElementById('screen-preview');
 const inputAudioVisualizer = document.getElementById('input-audio-visualizer');
-const apiKeyContainer = document.getElementById('api-key-container');
+const apiKeyContainer = document.createElement('div');
+apiKeyContainer.id = 'api-key-container';
+apiKeyContainer.innerHTML = `
+    <input type="password" id="api-key-input" placeholder="Enter your Google AI Studio API key">
+    <button id="save-api-key">Save API Key</button>
+    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get API Key</a>
+`;
+document.querySelector('#app').insertBefore(apiKeyContainer, document.querySelector('#logs-container'));
+
 const apiKeyInput = document.getElementById('api-key-input');
 const saveApiKeyButton = document.getElementById('save-api-key');
 
@@ -45,7 +53,7 @@ let isUsingTool = false;
 let apiKey = localStorage.getItem('gemini_api_key');
 
 // Multimodal Client
-const client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY });
+let client = null;
 
 /**
  * Logs a message to the UI.
@@ -205,7 +213,7 @@ async function resumeAudioContext() {
  * @returns {Promise<void>}
  */
 async function connectToWebsocket() {
-    if (!CONFIG.API.KEY) {
+    if (!client) {
         logMessage('Please enter your API key first', 'system');
         apiKeyContainer.style.display = 'block';
         return;
@@ -297,82 +305,121 @@ function handleSendMessage() {
     }
 }
 
-// Event Listeners
-client.on('open', () => {
-    logMessage('WebSocket connection opened', 'system');
-});
-
-client.on('log', (log) => {
-    logMessage(`${log.type}: ${JSON.stringify(log.message)}`, 'system');
-});
-
-client.on('close', (event) => {
-    logMessage(`WebSocket connection closed (code ${event.code})`, 'system');
-});
-
-client.on('audio', async (data) => {
-    try {
-        await resumeAudioContext();
-        const streamer = await ensureAudioInitialized();
-        streamer.addPCM16(new Uint8Array(data));
-    } catch (error) {
-        logMessage(`Error processing audio: ${error.message}`, 'system');
-    }
-});
-
-client.on('content', (data) => {
-    if (data.modelTurn) {
-        if (data.modelTurn.parts.some(part => part.functionCall)) {
-            isUsingTool = true;
-            Logger.info('Model is using a tool');
-        } else if (data.modelTurn.parts.some(part => part.functionResponse)) {
-            isUsingTool = false;
-            Logger.info('Tool usage completed');
-        }
-
-        const text = data.modelTurn.parts.map(part => part.text).join('');
-        if (text) {
-            logMessage(text, 'ai');
-        }
-    }
-});
-
-client.on('interrupted', () => {
-    audioStreamer?.stop();
-    isUsingTool = false;
-    Logger.info('Model interrupted');
-    logMessage('Model interrupted', 'system');
-});
-
-client.on('setupcomplete', () => {
-    logMessage('Setup complete', 'system');
-});
-
-client.on('turncomplete', () => {
-    isUsingTool = false;
-    logMessage('Turn complete', 'system');
-});
-
-client.on('error', (error) => {
-    if (error instanceof ApplicationError) {
-        Logger.error(`Application error: ${error.message}`, error);
+/**
+ * Handles the API key management.
+ */
+function handleApiKey() {
+    if (!apiKey) {
+        apiKeyContainer.style.display = 'block';
+        connectButton.disabled = true;
     } else {
-        Logger.error('Unexpected error', error);
+        apiKeyContainer.style.display = 'none';
+        connectButton.disabled = false;
+        // Initialize client with the stored API key
+        client = new MultimodalLiveClient({ apiKey });
+        setupClientEventListeners(); // We'll move all client event listeners to this function
     }
-    logMessage(`Error: ${error.message}`, 'system');
-});
+}
 
-client.on('message', (message) => {
-    if (message.error) {
-        Logger.error('Server error:', message.error);
-        logMessage(`Server error: ${message.error}`, 'system');
+/**
+ * Saves the API key.
+ */
+function saveApiKey() {
+    const newApiKey = apiKeyInput.value.trim();
+    if (newApiKey) {
+        apiKey = newApiKey;
+        localStorage.setItem('gemini_api_key', apiKey);
+        apiKeyContainer.style.display = 'none';
+        // Initialize client with the new API key
+        client = new MultimodalLiveClient({ apiKey });
+        setupClientEventListeners();
+        connectButton.disabled = false;
+        apiKeyInput.value = '';
+        logMessage('API key saved successfully', 'system');
     }
-});
+}
 
-sendButton.addEventListener('click', handleSendMessage);
-messageInput.addEventListener('keypress', (event) => {
+/**
+ * Sets up all client event listeners.
+ */
+function setupClientEventListeners() {
+    client.on('open', () => {
+        logMessage('WebSocket connection opened', 'system');
+    });
+
+    client.on('log', (log) => {
+        logMessage(`${log.type}: ${JSON.stringify(log.message)}`, 'system');
+    });
+
+    client.on('close', (event) => {
+        logMessage(`WebSocket connection closed (code ${event.code})`, 'system');
+    });
+
+    client.on('audio', async (data) => {
+        try {
+            await resumeAudioContext();
+            const streamer = await ensureAudioInitialized();
+            streamer.addPCM16(new Uint8Array(data));
+        } catch (error) {
+            logMessage(`Error processing audio: ${error.message}`, 'system');
+        }
+    });
+
+    client.on('content', (data) => {
+        if (data.modelTurn) {
+            if (data.modelTurn.parts.some(part => part.functionCall)) {
+                isUsingTool = true;
+                Logger.info('Model is using a tool');
+            } else if (data.modelTurn.parts.some(part => part.functionResponse)) {
+                isUsingTool = false;
+                Logger.info('Tool usage completed');
+            }
+
+            const text = data.modelTurn.parts.map(part => part.text).join('');
+            if (text) {
+                logMessage(text, 'ai');
+            }
+        }
+    });
+
+    client.on('interrupted', () => {
+        audioStreamer?.stop();
+        isUsingTool = false;
+        Logger.info('Model interrupted');
+        logMessage('Model interrupted', 'system');
+    });
+
+    client.on('setupcomplete', () => {
+        logMessage('Setup complete', 'system');
+    });
+
+    client.on('turncomplete', () => {
+        isUsingTool = false;
+        logMessage('Turn complete', 'system');
+    });
+
+    client.on('error', (error) => {
+        if (error instanceof ApplicationError) {
+            Logger.error(`Application error: ${error.message}`, error);
+        } else {
+            Logger.error('Unexpected error', error);
+        }
+        logMessage(`Error: ${error.message}`, 'system');
+    });
+
+    client.on('message', (message) => {
+        if (message.error) {
+            Logger.error('Server error:', message.error);
+            logMessage(`Server error: ${message.error}`, 'system');
+        }
+    });
+}
+
+// Event Listeners
+saveApiKeyButton.addEventListener('click', saveApiKey);
+apiKeyInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
-        handleSendMessage();
+        saveApiKey();
     }
 });
 
@@ -506,36 +553,6 @@ function stopScreenSharing() {
 screenButton.addEventListener('click', handleScreenShare);
 screenButton.disabled = true;
 
-function handleApiKey() {
-    if (!apiKey) {
-        apiKeyContainer.style.display = 'block';
-        connectButton.disabled = true;
-    } else {
-        apiKeyContainer.style.display = 'none';
-        connectButton.disabled = false;
-        CONFIG.API.KEY = apiKey;
-    }
-}
-
-function saveApiKey() {
-    const newApiKey = apiKeyInput.value.trim();
-    if (newApiKey) {
-        apiKey = newApiKey;
-        localStorage.setItem('gemini_api_key', apiKey);
-        CONFIG.API.KEY = apiKey;
-        apiKeyContainer.style.display = 'none';
-        connectButton.disabled = false;
-        apiKeyInput.value = '';
-        logMessage('API key saved successfully', 'system');
-    }
-}
-
-saveApiKeyButton.addEventListener('click', saveApiKey);
-apiKeyInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') {
-        saveApiKey();
-    }
-});
-
+// Call this at the end of the file
 handleApiKey();
   

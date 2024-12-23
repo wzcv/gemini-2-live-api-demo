@@ -482,6 +482,7 @@ body {
     animation: audio-pulse 0.5s infinite;
 }
 
+/* For the API key container */
 #api-key-container {
     margin-bottom: 20px;
     padding: 15px;
