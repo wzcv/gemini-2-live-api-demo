@@ -27,17 +27,6 @@ const screenIcon = document.getElementById('screen-icon');
 const screenContainer = document.getElementById('screen-container');
 const screenPreview = document.getElementById('screen-preview');
 const inputAudioVisualizer = document.getElementById('input-audio-visualizer');
-const apiKeyContainer = document.createElement('div');
-apiKeyContainer.id = 'api-key-container';
-apiKeyContainer.innerHTML = `
-    <input type="password" id="api-key-input" placeholder="Enter your Google AI Studio API key">
-    <button id="save-api-key">Save API Key</button>
-    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get API Key</a>
-`;
-document.querySelector('#app').insertBefore(apiKeyContainer, document.querySelector('#logs-container'));
-
-const apiKeyInput = document.getElementById('api-key-input');
-const saveApiKeyButton = document.getElementById('save-api-key');
 
 // State variables
 let isRecording = false;
@@ -50,9 +39,6 @@ let videoManager = null;
 let isScreenSharing = false;
 let screenRecorder = null;
 let isUsingTool = false;
-let apiKey = localStorage.getItem('gemini_api_key');
-
-// Multimodal Client
 let client = null;
 
 /**
@@ -210,14 +196,18 @@ async function resumeAudioContext() {
 
 /**
  * Connects to the WebSocket server.
- * @returns {Promise<void>}
  */
 async function connectToWebsocket() {
-    if (!client) {
+    handleApiKey();
+
+    if (!CONFIG.API.KEY) {
         logMessage('Please enter your API key first', 'system');
         apiKeyContainer.style.display = 'block';
         return;
     }
+
+    client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY });
+
     const config = {
         model: CONFIG.API.MODEL_NAME,
         generationConfig: {
@@ -258,91 +248,7 @@ async function connectToWebsocket() {
         cameraButton.disabled = true;
         screenButton.disabled = true;
     }
-}
 
-/**
- * Disconnects from the WebSocket server.
- */
-function disconnectFromWebsocket() {
-    client.disconnect();
-    isConnected = false;
-    if (audioStreamer) {
-        audioStreamer.stop();
-        if (audioRecorder) {
-            audioRecorder.stop();
-            audioRecorder = null;
-        }
-        isRecording = false;
-        updateMicIcon();
-    }
-    connectButton.textContent = 'Connect';
-    connectButton.classList.remove('connected');
-    messageInput.disabled = true;
-    sendButton.disabled = true;
-    micButton.disabled = true;
-    cameraButton.disabled = true;
-    screenButton.disabled = true;
-    logMessage('Disconnected from server', 'system');
-    
-    if (videoManager) {
-        stopVideo();
-    }
-    
-    if (screenRecorder) {
-        stopScreenSharing();
-    }
-}
-
-/**
- * Handles sending a text message.
- */
-function handleSendMessage() {
-    const message = messageInput.value.trim();
-    if (message) {
-        logMessage(message, 'user');
-        client.send({ text: message });
-        messageInput.value = '';
-    }
-}
-
-/**
- * Handles the API key management.
- */
-function handleApiKey() {
-    if (!apiKey) {
-        apiKeyContainer.style.display = 'block';
-        connectButton.disabled = true;
-    } else {
-        apiKeyContainer.style.display = 'none';
-        connectButton.disabled = false;
-        // Initialize client with the stored API key
-        client = new MultimodalLiveClient({ apiKey });
-        setupClientEventListeners(); // We'll move all client event listeners to this function
-    }
-}
-
-/**
- * Saves the API key.
- */
-function saveApiKey() {
-    const newApiKey = apiKeyInput.value.trim();
-    if (newApiKey) {
-        apiKey = newApiKey;
-        localStorage.setItem('gemini_api_key', apiKey);
-        apiKeyContainer.style.display = 'none';
-        // Initialize client with the new API key
-        client = new MultimodalLiveClient({ apiKey });
-        setupClientEventListeners();
-        connectButton.disabled = false;
-        apiKeyInput.value = '';
-        logMessage('API key saved successfully', 'system');
-    }
-}
-
-/**
- * Sets up all client event listeners.
- */
-function setupClientEventListeners() {
     client.on('open', () => {
         logMessage('WebSocket connection opened', 'system');
     });
@@ -415,11 +321,58 @@ function setupClientEventListeners() {
     });
 }
 
-// Event Listeners
-saveApiKeyButton.addEventListener('click', saveApiKey);
-apiKeyInput.addEventListener('keypress', (event) => {
+/**
+ * Disconnects from the WebSocket server.
+ */
+function disconnectFromWebsocket() {
+    if (client) {
+        client.disconnect();
+        client = null;
+    }
+    isConnected = false;
+    if (audioStreamer) {
+        audioStreamer.stop();
+        if (audioRecorder) {
+            audioRecorder.stop();
+            audioRecorder = null;
+        }
+        isRecording = false;
+        updateMicIcon();
+    }
+    connectButton.textContent = 'Connect';
+    connectButton.classList.remove('connected');
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+    micButton.disabled = true;
+    cameraButton.disabled = true;
+    screenButton.disabled = true;
+    logMessage('Disconnected from server', 'system');
+    
+    if (videoManager) {
+        stopVideo();
+    }
+    
+    if (screenRecorder) {
+        stopScreenSharing();
+    }
+}
+
+/**
+ * Handles sending a text message.
+ */
+function handleSendMessage() {
+    const message = messageInput.value.trim();
+    if (message) {
+        logMessage(message, 'user');
+        client.send({ text: message });
+        messageInput.value = '';
+    }
+}
+
+sendButton.addEventListener('click', handleSendMessage);
+messageInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
-        saveApiKey();
+        handleSendMessage();
     }
 });
 
@@ -552,7 +505,4 @@ function stopScreenSharing() {
 
 screenButton.addEventListener('click', handleScreenShare);
 screenButton.disabled = true;
-
-// Call this at the end of the file
-handleApiKey();
   
