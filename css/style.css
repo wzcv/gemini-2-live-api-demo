@@ -489,6 +489,7 @@ body {
     border-radius: 8px;
     border: 1px solid #dee2e6;
     display: none; /* Hidden by default, shown when no API key is set */
+    display: flex;
     align-items: center;
     gap: 10px;
 }
