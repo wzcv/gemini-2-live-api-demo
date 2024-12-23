@@ -489,32 +489,44 @@ body {
     border-radius: 8px;
     border: 1px solid #dee2e6;
     display: none; /* Hidden by default, shown when no API key is set */
+    align-items: center;
+    gap: 10px;
 }
 
 #api-key-container input {
-    width: calc(100% - 220px);
-    padding: 8px;
-    margin-right: 10px;
+    flex: 1;
+    padding: 10px;
     border: 1px solid #ced4da;
     border-radius: 4px;
+    font-size: 14px;
 }
 
 #api-key-container button {
-    padding: 8px 16px;
+    padding: 10px 20px;
     background: #34a853;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
+}
+
+#api-key-container button:hover {
+    background: #2d9346;
 }
 
 #api-key-container a {
-    margin-left: 10px;
     color: #4285f4;
     text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
 }
 
 #api-key-container a:hover {
-    text-decoration: underline;
+    background: #f1f3f4;
+    text-decoration: none;
 }
  
