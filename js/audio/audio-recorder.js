@@ -50,8 +50,8 @@ export class AudioRecorder {
             this.audioContext = new AudioContext({ sampleRate: this.sampleRate });
             this.source = this.audioContext.createMediaStreamSource(this.stream);
 
-            // Load and initialize audio worklet
-            await this.audioContext.audioWorklet.addModule('js/audio/worklets/audio-processing.js');
+            // Load and initialize audio worklet with relative path
+            await this.audioContext.audioWorklet.addModule('./js/audio/worklets/audio-processing.js');
             this.processor = new AudioWorkletNode(this.audioContext, 'audio-recorder-worklet');
             
             // Handle processed audio data

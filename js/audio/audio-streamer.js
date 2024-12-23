@@ -52,8 +52,7 @@ export class AudioStreamer {
         workletsRecord[workletName] = { handlers: [handler] };
 
         try {
-            const absolutePath = `/${workletSrc}`;
-            await this.context.audioWorklet.addModule(absolutePath);
+            await this.context.audioWorklet.addModule(workletSrc);
         } catch (error) {
             console.error('Error loading worklet:', error);
             throw error;
