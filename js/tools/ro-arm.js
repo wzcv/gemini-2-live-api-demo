@@ -1,9 +1,10 @@
 import { Logger } from '../utils/logger.js';
+import CONFIG from '../config/config.js';
 
 export class RoArmTool {
     constructor() {
-        // this.roArmIp = "192.168.1.4";
-        this.roArmIp = "172.20.10.3";
+        // You should configure this in config/config.js. Read more there.
+        this.roArmIp = CONFIG.ROARM.IP_ADDRESS;
 
         // Default position of the arm
         // {"T":1041,"x":229.7000215,"y":2.818984873,"z":-37.53525214,"b":0.012271846,"s":0.334407812,"e":2.350058567,"t":2.195126507,"torB":0,"torS":168,"torE":0,"torH":0}

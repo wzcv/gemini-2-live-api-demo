@@ -31,10 +31,10 @@ export const CONFIG = {
     TOOLS: {
         // Add tool-specific configurations here if needed
     },
-    // If you are working in the RoArm branch 
-    // ROARM: {
-        // IP_ADDRESS: '192.168.1.4'
-    // }
+    // You should get this IP address from the RoArm-M2 OLED screen after enabling STA mode
+    ROARM: {
+        IP_ADDRESS: '192.168.1.4'
+    }
 };
 
 export default CONFIG; 
