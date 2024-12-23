@@ -51,7 +51,14 @@ export class AudioRecorder {
             this.source = this.audioContext.createMediaStreamSource(this.stream);
 
             // Load and initialize audio worklet with relative path
-            await this.audioContext.audioWorklet.addModule('./js/audio/worklets/audio-processing.js');
+            const response = await fetch('./js/audio/worklets/audio-processing.js');
+            const text = await response.text();
+            const blob = new Blob([text], { type: 'application/javascript' });
+            const workletUrl = URL.createObjectURL(blob);
+            
+            await this.audioContext.audioWorklet.addModule(workletUrl);
+            URL.revokeObjectURL(workletUrl);
+            
             this.processor = new AudioWorkletNode(this.audioContext, 'audio-recorder-worklet');
             
             // Handle processed audio data

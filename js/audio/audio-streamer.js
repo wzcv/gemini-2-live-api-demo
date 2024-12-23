@@ -52,7 +52,14 @@ export class AudioStreamer {
         workletsRecord[workletName] = { handlers: [handler] };
 
         try {
-            await this.context.audioWorklet.addModule(workletSrc);
+            // Create a Blob with the worklet code and proper MIME type
+            const response = await fetch(workletSrc);
+            const text = await response.text();
+            const blob = new Blob([text], { type: 'application/javascript' });
+            const workletUrl = URL.createObjectURL(blob);
+            
+            await this.context.audioWorklet.addModule(workletUrl);
+            URL.revokeObjectURL(workletUrl); // Clean up the URL
         } catch (error) {
             console.error('Error loading worklet:', error);
             throw error;

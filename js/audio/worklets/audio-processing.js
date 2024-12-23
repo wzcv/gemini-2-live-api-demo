@@ -74,4 +74,7 @@ class AudioProcessingWorklet extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('audio-recorder-worklet', AudioProcessingWorklet); 
+// Add proper module registration
+if (typeof AudioWorkletProcessor !== 'undefined') {
+    registerProcessor('audio-recorder-worklet', AudioProcessingWorklet);
+} 

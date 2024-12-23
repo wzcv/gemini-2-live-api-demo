@@ -65,4 +65,7 @@ class VUMeterProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('vumeter-out', VUMeterProcessor); 
+// Add proper module registration
+if (typeof AudioWorkletProcessor !== 'undefined') {
+    registerProcessor('vumeter-out', VUMeterProcessor);
+} 
