@@ -328,7 +328,19 @@ messageInput.addEventListener('keypress', (event) => {
     }
 });
 
-micButton.addEventListener('click', handleMicToggle);
+// Remove all existing mic button event listeners
+micButton.removeEventListener('click', handleMicToggle);
+micButton.onclick = null;
+
+// Add a single, simple click handler
+micButton.addEventListener('click', () => {
+    console.log('Mic button clicked');  // Debug log
+    if (!isConnected) {
+        logMessage('Please connect first', 'system');
+        return;
+    }
+    handleMicToggle();
+});
 
 connectButton.addEventListener('click', () => {
     if (isConnected) {
@@ -634,4 +646,19 @@ function checkAudioSupport() {
         return false;
     }
     return true;
+}
+
+if (!micButton) {
+    console.error('Mic button not found in DOM');
+} else {
+    Logger.info('Mic button found and initialized');
+}
+
+micButton.onclick = () => {
+    console.log('Mic button clicked (direct onclick)');
+};
+
+if (micButton) {
+    micButton.disabled = true;  // Start disabled
+    console.log('Mic button initialized and disabled');
 }
