@@ -37,20 +37,11 @@ export class AudioRecorder {
      * @async
      */
     async start(onAudioData) {
-        if (this.isRecording) {
-            Logger.warn('Attempting to start recording when already recording');
-            return;
-        }
-
         this.onAudioData = onAudioData;
         try {
-            Logger.info('Starting audio recorder...');
-            
             // First check if we have audio permission
             const permissionResult = await navigator.permissions.query({ name: 'microphone' })
-                .catch(() => ({ state: 'prompt' }));
-
-            Logger.info('Permission state:', permissionResult.state);
+                .catch(() => ({ state: 'prompt' })); // Fallback for browsers that don't support permission query
 
             if (permissionResult.state === 'denied') {
                 throw new ApplicationError(
@@ -97,8 +88,23 @@ export class AudioRecorder {
             this.processor.connect(this.audioContext.destination);
             this.isRecording = true;
         } catch (error) {
-            Logger.error('Audio recorder start error:', error);
-            console.error('Full audio recorder error:', error);
+            Logger.error('Microphone access error:', error);
+            
+            // Provide more specific error messages
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                throw new ApplicationError(
+                    'Microphone access was denied. Please allow microphone access and try again.',
+                    ErrorCodes.AUDIO_PERMISSION_DENIED,
+                    { originalError: error }
+                );
+            } else if (error.name === 'NotFoundError') {
+                throw new ApplicationError(
+                    'No microphone found. Please ensure your device has a working microphone.',
+                    ErrorCodes.AUDIO_DEVICE_NOT_FOUND,
+                    { originalError: error }
+                );
+            }
+            
             throw error;
         }
     }
