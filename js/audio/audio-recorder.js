@@ -47,8 +47,7 @@ export class AudioRecorder {
                 } 
             });
             
-            // Create AudioContext without specifying sample rate
-            this.audioContext = new AudioContext();
+            this.audioContext = new AudioContext({ sampleRate: this.sampleRate });
             this.source = this.audioContext.createMediaStreamSource(this.stream);
 
             // Load and initialize audio worklet with relative path
