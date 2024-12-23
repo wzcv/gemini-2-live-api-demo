@@ -472,16 +472,37 @@ handleApiKey(); // Call this when the page loads
  * @returns {Promise<AudioStreamer>} The audio streamer instance.
  */
 async function ensureAudioInitialized() {
-    if (!audioCtx) {
-        audioCtx = new AudioContext();
+    try {
+        Logger.info('Ensuring audio is initialized...');
+        
+        if (!audioCtx) {
+            Logger.info('Creating new AudioContext...');
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ 
+                sampleRate: 16000 // Match the expected sample rate
+            });
+        }
+
+        if (audioCtx.state === 'suspended') {
+            Logger.info('Resuming AudioContext...');
+            await audioCtx.resume();
+        }
+
+        if (!audioStreamer) {
+            Logger.info('Creating new AudioStreamer...');
+            audioStreamer = new AudioStreamer(audioCtx);
+            Logger.info('Adding VU meter worklet...');
+            await audioStreamer.addWorklet('vumeter-out', 'js/audio/worklets/vol-meter.js', (ev) => {
+                updateAudioVisualizer(ev.data.volume);
+            });
+        }
+
+        Logger.info('Audio initialization complete');
+        return audioStreamer;
+    } catch (error) {
+        Logger.error('Failed to initialize audio:', error);
+        console.error('Full audio init error:', error);
+        throw new Error(`Failed to initialize audio: ${error.message}`);
     }
-    if (!audioStreamer) {
-        audioStreamer = new AudioStreamer(audioCtx);
-        await audioStreamer.addWorklet('vumeter-out', 'js/audio/worklets/vol-meter.js', (ev) => {
-            updateAudioVisualizer(ev.data.volume);
-        });
-    }
-    return audioStreamer;
 }
 
 /**
@@ -491,22 +512,28 @@ async function ensureAudioInitialized() {
 async function handleMicToggle() {
     if (!isRecording) {
         try {
+            // Add debug logging
+            Logger.info('Starting microphone...');
+            micButton.disabled = true;
+            micButton.classList.add('loading');
+            
             // First check if the context is in suspended state
             if (audioCtx && audioCtx.state === 'suspended') {
+                Logger.info('Resuming audio context...');
                 await audioCtx.resume();
             }
 
+            Logger.info('Initializing audio...');
             await ensureAudioInitialized();
-            audioRecorder = new AudioRecorder();
             
-            // Add loading state to mic button
-            micButton.disabled = true;
-            micButton.classList.add('loading');
+            Logger.info('Creating audio recorder...');
+            audioRecorder = new AudioRecorder();
             
             const inputAnalyser = audioCtx.createAnalyser();
             inputAnalyser.fftSize = 256;
             const inputDataArray = new Uint8Array(inputAnalyser.frequencyBinCount);
             
+            Logger.info('Starting audio recorder...');
             await audioRecorder.start((base64Data) => {
                 if (isUsingTool) {
                     client.sendRealtimeInput([{
@@ -526,6 +553,7 @@ async function handleMicToggle() {
                 updateAudioVisualizer(inputVolume, true);
             });
 
+            Logger.info('Getting user media...');
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -537,13 +565,22 @@ async function handleMicToggle() {
             const source = audioCtx.createMediaStreamSource(stream);
             source.connect(inputAnalyser);
             
-            await audioStreamer.resume();
+            if (audioStreamer) {
+                Logger.info('Resuming audio streamer...');
+                await audioStreamer.resume();
+            } else {
+                Logger.error('Audio streamer not initialized');
+                throw new Error('Audio streamer not initialized');
+            }
+
             isRecording = true;
-            Logger.info('Microphone started');
+            Logger.info('Microphone started successfully');
             logMessage('Microphone started', 'system');
             updateMicIcon();
+
         } catch (error) {
             Logger.error('Microphone error:', error);
+            console.error('Full error:', error); // Add full error logging
             
             // Provide user-friendly error messages
             let errorMessage = 'Could not access microphone. ';
@@ -552,12 +589,13 @@ async function handleMicToggle() {
             } else if (error.code === ErrorCodes.AUDIO_DEVICE_NOT_FOUND) {
                 errorMessage += 'Please ensure your device has a working microphone.';
             } else {
-                errorMessage += error.message;
+                errorMessage += error.message || 'Unknown error occurred';
             }
             
             logMessage(`Error: ${errorMessage}`, 'system');
             isRecording = false;
             updateMicIcon();
+
         } finally {
             // Always remove loading state
             micButton.disabled = false;
