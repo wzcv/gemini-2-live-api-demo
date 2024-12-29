@@ -38,28 +38,6 @@ This project simplifies [Google's original React implementation](https://github.
    - Share your screen
 3. **Monitor**: Check the logs panel for real-time feedback
 
-## Security Notes
-
-- Your API key is stored only in your browser's localStorage
-- The key is never transmitted to our servers
-- For production use, consider using the local development version
-- Clear your browser data to remove stored API keys
-
-## Browser Requirements
-
-- Modern web browser with support for:
-  - Web Audio API
-  - WebRTC
-  - WebSockets
-  - localStorage
-
-## Local Development
-
-For local development or production deployment:
-
-1. Switch to the [`main` branch](../../tree/main)
-2. Follow the installation instructions there
-
 ## Contributing
 
 Contributions are welcome! Please submit issues and pull requests to the main branch.
