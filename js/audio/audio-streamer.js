@@ -13,7 +13,7 @@ export class AudioStreamer {
         this.context = context;
         this.audioQueue = [];
         this.isPlaying = false;
-        this.sampleRate = 24000;
+        this._sampleRate = 24000; // Default sample rate
         this.bufferSize = 7680;
         this.processingBuffer = new Float32Array(0);
         this.scheduledTime = 0;
@@ -26,6 +26,22 @@ export class AudioStreamer {
         this.onComplete = () => { };
         this.gainNode.connect(this.context.destination);
         this.addPCM16 = this.addPCM16.bind(this);
+    }
+
+    /**
+     * Get the current sample rate
+     */
+    get sampleRate() {
+        return this._sampleRate;
+    }
+
+    /**
+     * Set the sample rate and update buffer size accordingly
+     */
+    set sampleRate(value) {
+        this._sampleRate = value;
+        // Update buffer size based on sample rate to maintain consistent timing
+        this.bufferSize = Math.floor(value * 0.32); // 320ms buffer
     }
 
     /**
