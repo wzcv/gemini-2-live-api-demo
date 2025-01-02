@@ -102,8 +102,16 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 14px;
+    font-size: 14px;
 }
 
+#base-url-input {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+}
 /* Main controls */
 .main-controls {
     display: flex;
