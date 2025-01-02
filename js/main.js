@@ -234,7 +234,7 @@ function handleApiKey() {
     apiKey = localStorage.getItem('gemini_api_key');
     if (!apiKey) {
         apiKeyContainer.style.display = 'block';
-        connectButton.disabled = true;
+        connectButton.disabled = false;
     } else {
         apiKeyContainer.style.display = 'none';
         connectButton.disabled = false;
