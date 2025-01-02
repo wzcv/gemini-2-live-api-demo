@@ -242,6 +242,25 @@ function handleApiKey() {
     }
 }
 
+const baseUrlInput = document.getElementById('base-url-input');
+const saveBaseUrlButton = document.getElementById('save-base-url');
+let baseUrl = localStorage.getItem('gemini_base_url') || CONFIG.API.BASE_URL;
+
+function handleBaseUrl() {
+    baseUrlInput.value = baseUrl;
+    saveBaseUrlButton.addEventListener('click', saveBaseUrl);
+}
+
+function saveBaseUrl() {
+    const newBaseUrl = baseUrlInput.value.trim();
+    if (newBaseUrl) {
+        baseUrl = newBaseUrl;
+        localStorage.setItem('gemini_base_url', baseUrl);
+        CONFIG.API.BASE_URL = baseUrl;
+        logMessage('Base URL saved successfully', 'system');
+    }
+}
+
 /**
  * Saves the API key to localStorage
  */
@@ -270,7 +289,8 @@ async function connectToWebsocket() {
         return;
     }
 
-    client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY });
+    handleBaseUrl();
+    client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY, baseUrl: CONFIG.API.BASE_URL });
 
     const config = {
         model: CONFIG.API.MODEL_NAME,
