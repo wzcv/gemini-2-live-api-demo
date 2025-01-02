@@ -290,7 +290,7 @@ async function connectToWebsocket() {
     }
 
     handleBaseUrl();
-    client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY, baseUrl: CONFIG.API.BASE_URL });
+    client = new MultimodalLiveClient({ apiKey: CONFIG.API.KEY, baseUrl: baseUrl });
 
     const config = {
         model: CONFIG.API.MODEL_NAME,
